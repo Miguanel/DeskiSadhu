@@ -59,7 +59,7 @@ export function ResetButton() {
   )
 }
 
-/** Komunikat po wyczyszczeniu z przyciskiem "Cofnij" (znika po 10 s) */
+/** Komunikat po powrocie do ustawień standardowych z przyciskiem "Cofnij" – u góry podglądu, by nie zasłaniał widoków (znika po 10 s) */
 export function UndoToast() {
   const show = useConfigurator((s) => s.resetNotice)
   const { undo, dismissResetNotice } = useConfigurator.getState()
@@ -72,7 +72,7 @@ export function UndoToast() {
   return (
     <div
       role="status"
-      className="pointer-events-auto absolute bottom-16 left-1/2 flex -translate-x-1/2 items-center gap-3 rounded-full bg-deep-900/95 py-1.5 pr-1.5 pl-4 text-[0.84rem] whitespace-nowrap text-gold-100 shadow-lg ring-1 ring-gold-500/50 backdrop-blur-md sm:bottom-5"
+      className="pointer-events-auto absolute top-16 left-1/2 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full bg-deep-900/95 py-1.5 pr-1.5 pl-4 text-[0.84rem] whitespace-nowrap text-gold-100 shadow-lg ring-1 ring-gold-500/50 backdrop-blur-md sm:top-4"
     >
       Przywrócono ustawienia standardowe
       <button type="button" onClick={undo} className="flex items-center gap-1 rounded-full bg-gold-gradient px-3 py-1 font-semibold text-deep-900">

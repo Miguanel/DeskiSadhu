@@ -17,6 +17,7 @@ const POSES = [
 export default function ViewerOverlay() {
   const view = useConfigurator((s) => s.view)
   const config = useConfigurator((s) => s.config)
+  const resetNotice = useConfigurator((s) => s.resetNotice)
   const { setView, setPose, resetCamera } = useConfigurator.getState()
   const stats = nailStats(config)
   const nail = NAILS.find((n) => n.id === config.nail)
@@ -138,9 +139,9 @@ export default function ViewerOverlay() {
 
       <UndoToast />
 
-      {/* podpowiedź gestów */}
+      {/* podpowiedź gestów (ukryta, gdy u góry jest komunikat) */}
       <div
-        className={`absolute top-16 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-4 py-2 text-[0.82rem] whitespace-nowrap text-white/90 backdrop-blur transition-opacity duration-700 sm:top-5 ${hint ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute top-16 left-1/2 -translate-x-1/2 rounded-full bg-black/45 px-4 py-2 text-[0.82rem] whitespace-nowrap text-white/90 backdrop-blur transition-opacity duration-700 sm:top-5 ${hint && !resetNotice ? 'opacity-100' : 'opacity-0'}`}
       >
         <span className="hidden sm:inline">Przeciągnij, aby obrócić · kółko myszy – przybliżenie</span>
         <span className="sm:hidden">Przesuń palcem, aby obrócić</span>
