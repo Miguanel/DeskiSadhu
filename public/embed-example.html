@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Przykład osadzenia – konfigurator desek Sadhu</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; background: #0b1230; color: #fbf1d6; }
+      main { max-width: 1280px; margin: 0 auto; padding: 24px 16px; }
+
+      /* ▼▼▼ Ten fragment skopiuj na stronę klienta ▼▼▼ */
+      .sadhu-embed {
+        position: relative;
+        width: 100%;
+        height: min(88vh, 860px); /* desktop */
+        min-height: 620px;
+        border: 0;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px -20px rgb(0 0 0 / 0.6);
+      }
+      @media (max-width: 1023px) {
+        /* telefon/tablet: podgląd 3D u góry, panel przewijany pod nim – wewnątrz iframe */
+        .sadhu-embed { height: 100svh; min-height: 560px; border-radius: 0; }
+      }
+      .sadhu-embed iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+      /* ▲▲▲ */
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Zaprojektuj deski Sadhu</h1>
+      <p>Przykładowa podstrona z osadzonym konfiguratorem (motyw granatowy jak misteriada.pl: <code>?motyw=granat</code>).</p>
+
+      <!-- ▼▼▼ Kod do wklejenia (podmień adres src na docelowy) ▼▼▼ -->
+      <div class="sadhu-embed">
+        <iframe
+          src="./index.html?motyw=granat"
+          title="Konfigurator desek Sadhu"
+          loading="lazy"
+          allow="fullscreen; clipboard-write; web-share"
+          allowfullscreen
+        ></iframe>
+      </div>
+      <script>
+        // Opcjonalnie: odbiór zamówienia z konfiguratora (np. do Google Analytics / CRM)
+        window.addEventListener('message', function (e) {
+          if (!e.data || e.data.type !== 'sadhu:order') return
+          // Zawsze sprawdzaj pochodzenie wiadomości na produkcji, np.:
+          // if (e.origin !== 'https://miguanel.github.io') return
+          console.log('Nowe zamówienie z konfiguratora:', e.data.payload)
+        })
+      </script>
+      <!-- ▲▲▲ -->
+    </main>
+  </body>
+</html>
