@@ -70,7 +70,8 @@ export const GEOMETRY = {
   nailTip: 3.5, // długość stożkowego czubka
   boardThickness: 16, // grubość sklejki
   cornerRadius: 14, // zaokrąglenie narożników deski
-  margin: 16, // minimalna odległość osi gwoździa od krawędzi (≈ 11 gwoździ w rzędzie przy 14 cm i 10 mm)
+  margin: 16, // minimalna odległość osi gwoździa od krawędzi (11 gwoździ w pełnym rzędzie przy 14 cm i 10 mm)
+  fieldCornerCut: 1, // ścięcie narożników pola (w rozstawach) – skrajne rzędy: 8, 9, 10, potem pełne 11/10 przy 10 mm; 0 = bez ścięcia
   holeDiameter: 4, // otwory w płycie – gwóźdź wychodzi z otworu, puste otwory leżą między gwoździami
   holeDepth: 12, // głębokość otworów na gwoździe drugiej deski – po złożeniu między deskami zostaje nailHeight − holeDepth
   showHoles: true, // puste otwory na gwoździe drugiej deski (jak na płycie z produkcji)

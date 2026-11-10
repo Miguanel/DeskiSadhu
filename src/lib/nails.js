@@ -20,24 +20,40 @@ export function nailLayout(length, width, spacing, margin = GEOMETRY.margin) {
   const usableW = width - 2 * margin
   const N = Math.max(0, 2 * Math.floor((usableL - shift) / (2 * rowPitch) + 1e-6))
   const rows = N + 1
-  const colsEven = Math.max(1, Math.floor(usableW / spacing + 1e-6) + 1)
-  // rząd przesunięty o pół rozstawu mieści się tylko wtedy, gdy jest na niego miejsce
-  const colsOdd = Math.max(0, Math.floor((usableW - spacing / 2) / spacing + 1e-6) + 1)
-
-  // szerokość zajmowana przez siatkę (z rzędami przesuniętymi)
-  const spanW = colsOdd >= colsEven ? (colsEven - 1) * spacing + spacing / 2 : (colsEven - 1) * spacing
+  // Pole symetryczne w poprzek deski (jak na płycie z produkcji): pełne rzędy po `colsFull`
+  // gwoździ, rzędy przesunięte o pół rozstawu – o jeden gwóźdź krótsze. Skrajne rzędy (na obu
+  // końcach) to rzędy krótsze.
+  const colsFull = Math.max(2, Math.floor(usableW / spacing + 1e-6) + 1)
+  const colsShort = colsFull - 1
+  const spanW = (colsFull - 1) * spacing
   const x0 = -spanW / 2
   const y0 = -(N * rowPitch + shift) / 2
 
-  const points = []
+  const all = []
   for (let r = 0; r < rows; r++) {
-    const odd = r % 2 === 1
-    const n = odd ? colsOdd : colsEven
-    const xo = odd ? spacing / 2 : 0
-    for (let c = 0; c < n; c++) points.push([x0 + xo + c * spacing, y0 + r * rowPitch])
+    const short = r % 2 === 0
+    const n = short ? colsShort : colsFull
+    const xo = short ? spacing / 2 : 0
+    for (let c = 0; c < n; c++) all.push([x0 + xo + c * spacing, y0 + r * rowPitch])
   }
-  const holes = points.map(([x, y]) => [x, y + shift])
-  return { points, holes, rows, colsEven, colsOdd, rowPitch, shift }
+
+  // Narożniki pola ścięte „schodkowo” wzdłuż linii siatki (60°): skrajny rząd traci po jednym
+  // gwoździu z każdej strony, następny też, kolejne są pełne (przy fieldCornerCut = 1 rozstaw).
+  const cut = GEOMETRY.fieldCornerCut * spacing
+  const yMin = y0
+  const yMax = y0 + N * rowPitch
+  const points = cut > 0
+    ? all.filter(([x, y]) => {
+        const dx = Math.min(x - x0, x0 + spanW - x)
+        const dy = Math.min(y - yMin, yMax - y)
+        return dx >= cut - dy / Math.sqrt(3) - 0.05 * spacing
+      })
+    : all
+
+  // Otwory = odbicie gwoździ (x, y) → (x, −y): dokładnie tam trafią gwoździe drugiej deski
+  // po złożeniu „końcem na koniec”. Dla pełnej siatki to to samo co gwóźdź + spacing/√3.
+  const holes = points.map(([x, y]) => [x, -y])
+  return { points, holes, rows, colsFull, colsShort, rowPitch, shift }
 }
 
 /** Statystyki kompletu (2 deski) */

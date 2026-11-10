@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { COLORS, ENGRAVE_COLORS, FONTS, GEOMETRY, LEVELS, NAILS, PLYWOOD } from '../config/catalog'
 import { nailLayout } from '../lib/nails'
@@ -118,12 +118,10 @@ function useImage(src) {
 }
 
 /**
- * Pojedyncza deska. `target` – { position: [x,y,z], quaternion } – pozycja docelowa
- * dla wybranego widoku (deska płynnie do niej „dopływa”).
+ * Pojedyncza deska. Położenie grupy (`groupRef`) ustawia PoseAnimator w BoardScene –
+ * tam jest logika przejść między widokami bez przenikania desek.
  */
-export default function Board({ index, config, customImage, target }) {
-  const group = useRef()
-  const first = useRef(true)
+export default function Board({ index, config, customImage, groupRef }) {
   const gl = useThree((s) => s.gl)
   const { geometry, L, W, T } = useBoardGeometry(config.length, config.width)
   const nailGeo = useNailGeometry()
@@ -224,26 +222,8 @@ export default function Board({ index, config, customImage, target }) {
     nails.current.computeBoundingSphere()
   }, [layout, T, count])
 
-  // --- płynne przejście do pozycji docelowej
-  useFrame((_, dt) => {
-    const g = group.current
-    if (!g) return
-    const [x, y, z] = target.position
-    if (first.current) {
-      g.position.set(x, y, z)
-      g.quaternion.copy(target.quaternion)
-      first.current = false
-      return
-    }
-    const k = 1 - Math.exp(-dt * 5.5)
-    g.position.x += (x - g.position.x) * k
-    g.position.y += (y - g.position.y) * k
-    g.position.z += (z - g.position.z) * k
-    g.quaternion.slerp(target.quaternion, k)
-  })
-
   return (
-    <group ref={group}>
+    <group ref={groupRef}>
       <mesh geometry={geometry} material={materials} castShadow receiveShadow />
       {/* materiał i geometria jako właściwości, nie `args` – inaczej zmiana metalu tworzy nowy obiekt
           bez ustawionych pozycji i wszystkie gwoździe lądują w jednym punkcie */}

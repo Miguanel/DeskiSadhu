@@ -53,11 +53,20 @@ src/
 Układ jest **heksagonalny**: każdy gwóźdź ma 6 sąsiadów w odległości równej rozstawowi
 (8 mm – Początkujący, 10 mm – PRO, 12 mm – GORE). Rzędy są co `rozstaw × √3/2`, co drugi przesunięty
 o pół rozstawu, a siatka jest wyśrodkowana z marginesem `GEOMETRY.margin` od krawędzi.
-Dla deski 29 × 14 cm daje to 518 / 319 / 238 gwoździ na deskę (11 w rzędzie przy 10 mm).
+Pole jest symetryczne: pełne rzędy i krótsze o jeden gwóźdź rzędy przesunięte, a narożniki są ścięte „schodkowo”
+wzdłuż linii siatki (`fieldCornerCut`). Przy 10 mm i 29 × 14 cm rzędy od końca mają 8, 9, 10, potem 11 / 10 gwoździ –
+razem 491 / 296 / 229 gwoździ na deskę (8 / 10 / 12 mm).
 Między gwoździami są otwory (środki trójkątów siatki), w które po złożeniu kompletu wchodzą gwoździe drugiej deski.
 Siatka jest symetryczna względem obrotu deski „końcem na koniec”, więc gwoździe zawsze trafiają w otwory – przy każdym
 rozstawie i wymiarze. Pole otacza frezowany rowek, jak na płycie z produkcji
 (`holeDiameter`, `holeDepth`, `grooveInset` w `GEOMETRY`).
+
+### Przejścia między widokami
+
+`src/scene/poseTransition.js` liczy tor ruchu tak, by deski się nie przenikały: deska leżąca na drugiej najpierw
+unosi się pionowo (gwoździe wychodzą z otworów), deski rozsuwają się na boki dokładnie na tyle, by przy żadnym kącie
+obrotu nie zachodziły na siebie, i unoszą się tylko tyle, by nic nie zeszło pod podłogę. Obrót odbywa się w środku toru,
+a przy składaniu górna deska opada pionowo w otwory.
 
 Wymiary gwoździa, grubość sklejki, zaokrąglenie narożników i margines są w `GEOMETRY`
 (`src/config/catalog.js`) – to wartości orientacyjne do potwierdzenia z wykonawcą.

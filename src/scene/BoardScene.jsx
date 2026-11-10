@@ -6,6 +6,7 @@ import { useConfigurator } from '../store/useConfigurator'
 import Board, { boardDims } from './Board'
 import { GEOMETRY } from '../config/catalog'
 import Feet from './Feet'
+import { TRANSITION_S, transitionFrame, upperOf } from './poseTransition'
 import { registerSnapshot } from '../lib/snapshot'
 
 /**
@@ -37,9 +38,10 @@ export function poseTargets(pose, config) {
         { position: [sx, 0, 0], quaternion: FLAT },
       ]
     case 'engraving':
+      // odwrócona deska opiera się na czubkach gwoździ
       return [
-        { position: [-sx, T, 0], quaternion: FLIP },
-        { position: [sx, T, 0], quaternion: FLIP },
+        { position: [-sx, T + H, 0], quaternion: FLIP },
+        { position: [sx, T + H, 0], quaternion: FLIP },
       ]
     case 'stacked': {
       // dolna deska obrócona o 180°, górna odwrócona grawerem do góry: względem siebie to obrót
@@ -56,7 +58,8 @@ export function poseTargets(pose, config) {
       const yaw = (a) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a)
       return [
         { position: [-W * 0.36, L / 2, T + 2.5], quaternion: yaw(0.12).multiply(STAND_ENGRAVED) },
-        { position: [W * 0.42, L / 2, -W * 0.25], quaternion: yaw(-0.16).multiply(STAND_NAILS) },
+        // tylna deska odsunięta o wysokość gwoździ + zapas, by jej gwoździe nie dotykały przedniej
+        { position: [W * 0.42, L / 2, -(T + H) - 3], quaternion: yaw(-0.16).multiply(STAND_NAILS) },
       ]
     }
   }
@@ -122,6 +125,7 @@ function SceneContent() {
   const resetToken = useConfigurator((s) => s.view.resetToken)
 
   const targets = useMemo(() => poseTargets(pose, config), [pose, config])
+  const boards = [useRef(), useRef()]
   const { gl, scene, camera } = useThree()
   useEffect(
     () =>
@@ -143,13 +147,78 @@ function SceneContent() {
   return (
     <>
       <Lights size={Math.max(L, W * 2)} />
-      <Board index={0} config={config} customImage={customImage} target={targets[0]} />
-      <Board index={1} config={config} customImage={customImage} target={targets[1]} />
+      <Board index={0} config={config} customImage={customImage} groupRef={boards[0]} />
+      <Board index={1} config={config} customImage={customImage} groupRef={boards[1]} />
+      <PoseAnimator boards={boards} targets={targets} pose={pose} config={config} />
       {showFeet && pose === 'nails' && <Feet config={config} />}
       <ContactShadows position={[0, -0.05, 0]} scale={Math.max(L, W * 2) * 2.4} blur={2.4} far={L} opacity={0.55} resolution={512} />
       <CameraRig pose={pose} config={config} autoRotate={autoRotate} resetToken={resetToken} />
     </>
   )
+}
+
+/**
+ * Animacja zmiany widoku bez przenikania desek – tor ruchu liczy scene/poseTransition.js.
+ * Zmiany konfiguracji przy tym samym widoku (np. wymiar) – zwykłe, płynne dociąganie.
+ */
+function PoseAnimator({ boards, targets, pose, config }) {
+  const anim = useRef(null)
+  const shownPose = useRef(null)
+  const { L, W, T, H } = boardDims(config)
+  const clear = T + H + 0.6 // uniesienie wystarczające, by gwoździe wyszły z otworów drugiej deski
+  const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+  useFrame((_, dt) => {
+    const g = boards.map((r) => r.current)
+    if (!g[0] || !g[1]) return
+    const toVec = (p) => new THREE.Vector3(...p)
+
+    // pierwsza klatka – bez animacji
+    if (shownPose.current === null || reduced) {
+      g.forEach((o, i) => {
+        o.position.copy(toVec(targets[i].position))
+        o.quaternion.copy(targets[i].quaternion)
+      })
+      shownPose.current = pose
+      return
+    }
+
+    // start przejścia przy zmianie widoku
+    if (shownPose.current !== pose) {
+      shownPose.current = pose
+      const start = g.map((o) => ({ p: o.position.clone(), q: o.quaternion.clone() }))
+      const end = targets.map((t) => ({ p: toVec(t.position), q: t.quaternion.clone() }))
+      anim.current = {
+        t: 0,
+        start,
+        end,
+        upperStart: upperOf(start[0].p, start[1].p, L, W, T),
+        upperEnd: upperOf(end[0].p, end[1].p, L, W, T),
+      }
+    }
+
+    const a = anim.current
+    if (a) {
+      a.t = Math.min(1, a.t + dt / TRANSITION_S)
+      // tylko w trybie deweloperskim: zatrzymanie animacji w wybranej chwili (testy wizualne)
+      if (import.meta.env.DEV && typeof window.__animT === 'number') a.t = window.__animT
+      const frame = transitionFrame(a, a.t, { W, L, T, H }, clear)
+      g.forEach((o, i) => {
+        o.position.copy(frame[i].p)
+        o.quaternion.copy(frame[i].q)
+      })
+      if (a.t >= 1) anim.current = null
+      return
+    }
+
+    // ten sam widok, zmiana konfiguracji – płynne dociąganie
+    const k = 1 - Math.exp(-dt * 6)
+    g.forEach((o, i) => {
+      o.position.lerp(toVec(targets[i].position), k)
+      o.quaternion.slerp(targets[i].quaternion, k)
+    })
+  })
+  return null
 }
 
 function Lights({ size }) {
