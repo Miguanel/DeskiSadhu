@@ -24,7 +24,7 @@ export const BOARD_SET = 370
 
 /** Cena jednego gwoździa (z osadzeniem) wg materiału */
 export const NAIL_PRICE = {
-  copper: 0.6, // ROBOCZE – dobrane tak, by PRO 10 mm / miedź = 850 zł
+  copper: 0.75, // ROBOCZE – dobrane tak, by PRO 10 mm / miedź = 850 zł (638 gwoździ w komplecie)
   steel: 0.25, // ROBOCZE
 }
 

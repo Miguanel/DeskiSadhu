@@ -405,24 +405,60 @@ export function paintOuterFace(canvas, opts) {
   return canvas
 }
 
-/** Strona wewnętrzna – sklejka z ciemniejszymi „gniazdami” u podstawy gwoździ */
-export function paintInnerFace(canvas, { plywood, points, length, width, nailDiameter }) {
+/** Otwór w płycie: ciemne wnętrze, jaśniejsza, sfazowana krawędź */
+function drawHole(ctx, px, py, r) {
+  ctx.fillStyle = 'rgba(255,240,215,0.35)'
+  ctx.beginPath()
+  ctx.arc(px, py, r * 1.18, 0, TAU)
+  ctx.fill()
+  const g = ctx.createRadialGradient(px - r * 0.25, py - r * 0.25, r * 0.1, px, py, r)
+  g.addColorStop(0, '#1d120b')
+  g.addColorStop(0.75, '#2e1d12')
+  g.addColorStop(1, '#5a3c24')
+  ctx.fillStyle = g
+  ctx.beginPath()
+  ctx.arc(px, py, r, 0, TAU)
+  ctx.fill()
+}
+
+/** Zaokrąglony prostokąt (ścieżka) */
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+
+/**
+ * Strona wewnętrzna – sklejka z frezowanym rowkiem wokół pola, gwoździami wychodzącymi z otworów
+ * i pustymi otworami, w które po złożeniu wchodzą gwoździe drugiej deski.
+ */
+export function paintInnerFace(canvas, { plywood, points, holes, width, geometry }) {
   const W = canvas.width
   const H = canvas.height
   const ctx = canvas.getContext('2d')
-  drawWood(ctx, W, H, plywood.base, plywood.grain, { seed: 21, strength: 0.7 })
+  drawWood(ctx, W, H, plywood.base, plywood.grain, { seed: 21, strength: 0.8 })
   const k = W / width
-  const rr = (nailDiameter / 2) * k
-  for (const [x, y] of points) {
-    const px = W / 2 + x * k
-    const py = H / 2 - y * k
-    const g = ctx.createRadialGradient(px, py, rr * 0.4, px, py, rr * 2.6)
-    g.addColorStop(0, 'rgba(60,35,15,0.55)')
-    g.addColorStop(1, 'rgba(60,35,15,0)')
-    ctx.fillStyle = g
-    ctx.beginPath()
-    ctx.arc(px, py, rr * 2.6, 0, TAU)
-    ctx.fill()
-  }
+  const toPx = ([x, y]) => [W / 2 + x * k, H / 2 - y * k]
+
+  // rowek
+  const inset = geometry.grooveInset * k
+  const rr = Math.max(4, (geometry.cornerRadius * 1.6 - geometry.grooveInset) * k)
+  roundRect(ctx, inset, inset, W - 2 * inset, H - 2 * inset, rr)
+  ctx.strokeStyle = 'rgba(255,245,225,0.55)'
+  ctx.lineWidth = Math.max(1.5, 0.9 * k)
+  ctx.stroke()
+  roundRect(ctx, inset + 0.35 * k, inset + 0.35 * k, W - 2 * inset - 0.7 * k, H - 2 * inset - 0.7 * k, rr)
+  ctx.strokeStyle = 'rgba(70,45,25,0.45)'
+  ctx.lineWidth = Math.max(1, 0.4 * k)
+  ctx.stroke()
+
+  const r = (geometry.holeDiameter / 2) * k
+  if (geometry.showHoles) for (const p of holes) drawHole(ctx, ...toPx(p), r)
+  // gwóźdź wychodzi z otworu – widać wąski, ciemny pierścień wokół trzpienia
+  for (const p of points) drawHole(ctx, ...toPx(p), r * 0.92)
   return canvas
 }

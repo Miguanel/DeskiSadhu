@@ -73,12 +73,14 @@ function useNailGeometry() {
   return useMemo(() => {
     const r = (GEOMETRY.nailDiameter / 2) * U
     const h = GEOMETRY.nailHeight * U
+    const tip = GEOMETRY.nailTip * U
+    // trzpień + stożkowy, lekko zaokrąglony czubek (jak na płycie z produkcji)
     const pts = [
       [0, -0.3],
       [r, -0.3],
-      [r, h - 0.2],
-      [r * 0.8, h - 0.08],
-      [r * 0.35, h - 0.01],
+      [r, h - tip],
+      [r * 0.55, h - tip * 0.45],
+      [r * 0.18, h - 0.03],
       [0, h],
     ].map(([x, y]) => new THREE.Vector2(x, y))
     return new THREE.LatheGeometry(pts, 8)
@@ -149,8 +151,8 @@ export default function Board({ index, config, customImage, target }) {
   }, [config.length, config.width, aniso])
   const innerTex = useMemo(() => {
     const c = document.createElement('canvas')
-    c.width = 420
-    c.height = Math.round((420 * config.length) / config.width)
+    c.width = 720
+    c.height = Math.round((720 * config.length) / config.width)
     const t = new THREE.CanvasTexture(c)
     t.colorSpace = THREE.SRGBColorSpace
     t.anisotropy = aniso
@@ -180,9 +182,9 @@ export default function Board({ index, config, customImage, target }) {
     paintInnerFace(innerTex.image, {
       plywood: PLYWOOD,
       points: layout.points,
-      length: config.length,
+      holes: layout.holes,
       width: config.width,
-      nailDiameter: GEOMETRY.nailDiameter,
+      geometry: GEOMETRY,
     })
     innerTex.needsUpdate = true
   }, [innerTex, layout, config.length, config.width])
@@ -243,7 +245,9 @@ export default function Board({ index, config, customImage, target }) {
   return (
     <group ref={group}>
       <mesh geometry={geometry} material={materials} castShadow receiveShadow />
-      <instancedMesh key={count} ref={nails} args={[nailGeo, nailMat, count]} castShadow />
+      {/* materiał i geometria jako właściwości, nie `args` – inaczej zmiana metalu tworzy nowy obiekt
+          bez ustawionych pozycji i wszystkie gwoździe lądują w jednym punkcie */}
+      <instancedMesh key={count} ref={nails} args={[undefined, undefined, count]} geometry={nailGeo} material={nailMat} castShadow />
     </group>
   )
 }

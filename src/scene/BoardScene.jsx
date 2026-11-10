@@ -4,6 +4,7 @@ import { AdaptiveDpr, ContactShadows, Environment, Lightformer, OrbitControls } 
 import * as THREE from 'three'
 import { useConfigurator } from '../store/useConfigurator'
 import Board, { boardDims } from './Board'
+import { GEOMETRY } from '../config/catalog'
 import Feet from './Feet'
 import { registerSnapshot } from '../lib/snapshot'
 
@@ -15,11 +16,13 @@ import { registerSnapshot } from '../lib/snapshot'
  *  • showcase  – deski ustawione pionowo jak na zdjęciu produktu (grawer + gwoździe)
  *  • nails     – obie deski płasko, gwoździami do góry (do praktyki)
  *  • engraving – obie deski odwrócone grawerem do góry
- *  • stacked   – złożony komplet (gwoździe do środka, jak do przechowywania)
+ *  • stacked   – złożony komplet: górna deska obrócona „końcem na koniec”, jej gwoździe wchodzą
+ *                w otwory dolnej (i odwrotnie) – deski zachodzą na siebie, nie stykają się czubkami
  */
 const q = (x = 0, y = 0, z = 0, order = 'XYZ') => new THREE.Quaternion().setFromEuler(new THREE.Euler(x, y, z, order))
 const FLAT = q()
 const FLIP = q(0, 0, Math.PI)
+const TURN = q(0, Math.PI, 0) // obrót o 180° w płaszczyźnie deski
 const STAND_NAILS = q(Math.PI / 2, 0, 0)
 // najpierw obrót wokół osi długiej (grawer do góry), potem postawienie deski pionowo
 const STAND_ENGRAVED = new THREE.Quaternion().multiplyQuaternions(q(Math.PI / 2, 0, 0), FLIP)
@@ -38,11 +41,16 @@ export function poseTargets(pose, config) {
         { position: [-sx, T, 0], quaternion: FLIP },
         { position: [sx, T, 0], quaternion: FLIP },
       ]
-    case 'stacked':
+    case 'stacked': {
+      // dolna deska obrócona o 180°, górna odwrócona grawerem do góry: względem siebie to obrót
+      // „końcem na koniec”, więc gwoździe jednej trafiają w otwory drugiej (patrz lib/nails.js).
+      // Między płytami zostaje wysokość gwoździa minus głębokość otworu.
+      const gapFaces = H - GEOMETRY.holeDepth * 0.1
       return [
-        { position: [0, 0, 0], quaternion: FLAT },
-        { position: [0, 2 * T + 2 * H + 0.3, 0], quaternion: FLIP },
+        { position: [0, 0, 0], quaternion: TURN },
+        { position: [0, 2 * T + gapFaces, 0], quaternion: FLIP },
       ]
+    }
     case 'showcase':
     default: {
       const yaw = (a) => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), a)
@@ -61,14 +69,17 @@ export function poseTargets(pose, config) {
 function cameraFor(pose, config) {
   const { L, W, gap, T, H } = boardDims(config)
   if (pose === 'showcase') return { dir: [0.2, 0.16, 1], target: [0, L * 0.5, 0], radius: 0.5 * Math.hypot(L, W * 1.9) }
-  if (pose === 'stacked') return { dir: [0.75, 0.85, 1], target: [0, T + H / 2, 0], radius: 0.5 * Math.hypot(L, W) * 1.1 }
+  // złożone: niski kąt z boku, żeby było widać gwoździe obu desek wchodzące w otwory
+  if (pose === 'stacked') return { dir: [1, 0.32, 0.55], target: [0, T + H / 2, 0], radius: 0.5 * Math.hypot(L, W) * 0.95 }
   return { dir: [0, 1.25, 0.9], target: [0, 1, 0], radius: 0.5 * Math.hypot(L, 2 * W + gap) }
 }
 
 export default function BoardScene() {
   useEffect(() => {
     const onKey = (e) => {
-      if (/input|textarea|select/i.test(e.target.tagName)) return
+      // pomijamy tylko pola tekstowe (tam Ctrl+Z cofa wpisywany tekst); suwaki i przyciski – nie
+      const t = e.target
+      if (t.isContentEditable || /textarea|select/i.test(t.tagName) || (t.tagName === 'INPUT' && !/range|checkbox|radio|button|file/.test(t.type))) return
       const st = useConfigurator.getState()
       if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z' || e.key === 'y')) {
         e.preventDefault()
@@ -191,7 +202,7 @@ function CameraRig({ pose, config, autoRotate, resetToken }) {
     const pos = new THREE.Vector3(...dir).normalize().multiplyScalar(dist).add(t)
     anim.current = { pos, target: t, time: 0 }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pose, resetToken, config.length, config.width, size.width, size.height])
+  }, [pose, resetToken, config.length, config.width, size.width])
 
   useFrame((_, dt) => {
     const a = anim.current

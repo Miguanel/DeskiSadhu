@@ -60,15 +60,21 @@ export const NAILS = [
 ]
 
 /**
- * Geometria gwoździ i deski (mm). Wartości orientacyjne do podglądu 3D –
- * do potwierdzenia z wykonawcą, zmiana tutaj przelicza model i liczbę gwoździ.
+ * Geometria gwoździ i deski (mm) – wg zdjęcia deski z produkcji.
+ * Wartości orientacyjne do podglądu 3D, do potwierdzenia z wykonawcą:
+ * zmiana tutaj przelicza model, liczbę gwoździ i cennik.
  */
 export const GEOMETRY = {
-  nailDiameter: 2.2, // średnica trzpienia
+  nailDiameter: 2.6, // średnica trzpienia
   nailHeight: 22, // wysokość ponad powierzchnią deski
+  nailTip: 3.5, // długość stożkowego czubka
   boardThickness: 16, // grubość sklejki
-  cornerRadius: 12, // zaokrąglenie narożników
-  margin: 10, // minimalna odległość osi gwoździa od krawędzi
+  cornerRadius: 14, // zaokrąglenie narożników deski
+  margin: 16, // minimalna odległość osi gwoździa od krawędzi (≈ 11 gwoździ w rzędzie przy 14 cm i 10 mm)
+  holeDiameter: 4, // otwory w płycie – gwóźdź wychodzi z otworu, puste otwory leżą między gwoździami
+  holeDepth: 12, // głębokość otworów na gwoździe drugiej deski – po złożeniu między deskami zostaje nailHeight − holeDepth
+  showHoles: true, // puste otwory na gwoździe drugiej deski (jak na płycie z produkcji)
+  grooveInset: 7, // frezowany rowek wokół pola z gwoździami (odległość od krawędzi)
   gap: 40, // odstęp między deskami w podglądzie
 }
 
@@ -98,7 +104,7 @@ export const COLORS = [
 export const DEFAULT_COLOR = 'kasztan'
 
 /** Strona wewnętrzna – sklejka (nie jest wybierana, służy do podglądu 3D) */
-export const PLYWOOD = { base: '#e3c992', grain: '#c8a66a', edge: '#d6b77f' }
+export const PLYWOOD = { base: '#cdb088', grain: '#a88a62', edge: '#c4a57a' }
 
 /**
  * Wzory graweru. Rysunki są generowane proceduralnie w src/lib/engraving.js
